@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(npm test)",
+      "Bash(npm test *)",
+      "Bash(npm run doctor)",
+      "Bash(npm install)",
+      "Bash(node --test *)",
+      "Bash(node --check *)",
+      "Bash(node .claude/skills/probar-sku/smoke.mjs *)",
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)"
+    ],
+    "deny": [
+      "Read(./data/browser-state.json)",
+      "Edit(./data/**)",
+      "Edit(./node_modules/**)",
+      "Edit(./package-lock.json)",
+      "Bash(rm -rf *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/check-edit.mjs"],
+            "timeout": 60,
+            "statusMessage": "Revisando el archivo editado"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/stop-tests.mjs"],
+            "timeout": 180,
+            "statusMessage": "Corriendo npm test"
+          }
+        ]
+      }
+    ]
+  }
+}

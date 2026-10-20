@@ -1,0 +1,23 @@
+{
+  "name": "sku-finder",
+  "version": "1.0.0",
+  "description": "Rastreador local de precios de refrigeradores por SKU en tiendas de México",
+  "private": true,
+  "type": "module",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "test": "node --test",
+    "doctor": "node scripts/doctor.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@fontsource-variable/schibsted-grotesk": "^5.2.0",
+    "@fontsource/ibm-plex-mono": "^5.2.0",
+    "express": "^5.1.0",
+    "playwright-core": "^1.55.0"
+  }
+}
