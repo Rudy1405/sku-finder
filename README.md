@@ -51,7 +51,7 @@ Puedes apagar tiendas en **Ajustes**.
 - **Precio para el ranking:** precio + envío cuando el envío es visible sin código postal. Las ofertas con “envío por confirmar” van después de las de total conocido.
 - **Vendedores terceros y tiendas no verificadas:** cuentan, pero llevan etiqueta; el interruptor “Excluir terceros” los saca del ranking.
 - **Agotados, usados/reacondicionados o sin envío a domicilio:** se muestran atenuados y no cuentan.
-- **Histórico:** una fila por SKU. Cada búsqueda agrega un punto a su serie de precios (minigráfica), y la lista se ordena del mejor precio más bajo al más alto.
+- **Histórico:** una fila por SKU. Cada búsqueda agrega un punto a su serie de precios (minigráfica), y la lista se ordena del mejor precio más bajo al más alto. El botón **Descargar** de cada fila baja un reporte HTML de ese modelo (mismas tarjetas que en Rastrear, con estilos y fuentes incrustados; se abre sin la app).
 
 ## Si una tienda aparece como “bloqueado”
 

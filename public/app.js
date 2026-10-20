@@ -213,26 +213,7 @@ function renderResult({ focus = false } = {}) {
     html += `<div class="saved-note"><span>Resultado guardado del <strong>${esc(fmtDate(when))}</strong></span>
       <button class="btn btn--ghost btn--sm" data-act="research" data-sku="${esc(r.sku)}">Volver a rastrear</button></div>`;
   }
-  html += `
-    <section class="summary" aria-label="Resumen">
-      <div class="summary__id">
-        ${safeUrl(image) ? `<img class="summary__img" src="${esc(safeUrl(image))}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}
-        <div>
-          <div class="summary__sku">${esc(r.sku)}</div>
-          <h2 class="summary__title" tabindex="-1">${esc(title || 'Sin coincidencias exactas')}</h2>
-          <p class="summary__meta">${r.offerCount || 0} ofertas exactas en ${storesWith} ${storesWith === 1 ? 'tienda' : 'tiendas'} · ${checked} fuentes revisadas · ${Math.round((r.durationMs || 0) / 1000)} s${r.saved === false ? ' · no se guardó en el histórico' : ''}</p>
-        </div>
-      </div>
-      <div class="summary__best">
-        ${best ? `
-          <div class="summary__label">Menor ${best.totalKnown ? 'precio con envío' : 'precio · envío por confirmar'}</div>
-          <div class="summary__price">${money(best.total)}</div>
-          <div class="summary__where">en ${safeUrl(best.url) ? `<a href="${esc(safeUrl(best.url))}" target="_blank" rel="noopener">${esc(best.store)}</a>` : esc(best.store)} · ${esc(best.shipping.label)}</div>
-          ${delta != null && delta !== 0 ? `<span class="summary__delta" data-dir="${delta < 0 ? 'down' : 'up'}">${delta < 0 ? '▼' : '▲'} ${money(Math.abs(delta))} vs. búsqueda anterior</span>` : ''}
-          ${hist?.lowest && hist.lowest.total < best.total ? `<div class="summary__delta">Mínimo histórico ${money(hist.lowest.total)} · ${esc(hist.lowest.store || '')}</div>` : ''}
-        ` : `<div class="summary__label">Menor precio</div><div class="summary__price">—</div><div class="summary__where">No hay ofertas disponibles con el modelo exacto</div>`}
-      </div>
-    </section>`;
+  html += summaryHtml(r, { best, hist, delta, image, title, storesWith, checked });
 
   if ((r.offers || []).length) {
     html += `
@@ -254,20 +235,9 @@ function renderResult({ focus = false } = {}) {
     html += emptyResultHtml(r);
   }
 
-  if ((r.similar || []).length) {
-    html += `<details class="fold"><summary>Posibles coincidencias <span>(${r.similar.length}) · modelos parecidos, no cuentan para el ranking</span></summary>
-      <table class="rows"><thead><tr><th>Producto</th><th class="hide-sm">Tienda</th><th class="r">Precio</th></tr></thead><tbody>
-      ${r.similar.map((o) => `<tr><td>${safeUrl(o.url) ? `<a href="${esc(safeUrl(o.url))}" target="_blank" rel="noopener">${esc(o.title)}</a>` : esc(o.title)}<div class="hide-sm muted muted--sm">${o.available ? '' : 'Agotado'}</div></td><td class="hide-sm">${esc(o.store)}</td><td class="r num">${money(o.price)}</td></tr>`).join('')}
-      </tbody></table></details>`;
-  }
+  html += similarHtml(r);
 
-  html += `<details class="fold"><summary>Detalle por fuente <span>· qué respondió cada tienda</span></summary>
-    <table class="rows"><thead><tr><th>Fuente</th><th>Estado</th><th class="hide-sm">Nota</th><th class="r">Tiempo</th></tr></thead><tbody>
-    ${(r.stores || []).map((s) => `<tr><td>${safeUrl(s.searchUrl) ? `<a href="${esc(safeUrl(s.searchUrl))}" target="_blank" rel="noopener">${esc(s.name)}</a>` : esc(s.name)}</td>
-      <td><span class="st" data-s="${esc(s.status)}">${s.status === 'ok' ? `${s.count} ${s.count === 1 ? 'oferta' : 'ofertas'}` : esc(STATUS_TEXT[s.status] || s.status)}</span></td>
-      <td class="hide-sm muted">${esc(s.message || (s.parser ? `lector ${s.parser}` : ''))}</td>
-      <td class="r num muted">${s.ms ? (s.ms / 1000).toFixed(1) + ' s' : '—'}</td></tr>`).join('')}
-    </tbody></table></details>`;
+  html += storesHtml(r);
 
   el.innerHTML = html;
   if (focus) {
@@ -294,6 +264,47 @@ function renderResult({ focus = false } = {}) {
     }
     grid.appendChild(frag);
   }
+}
+
+function summaryHtml(r, { best, hist, delta, image, title, storesWith, checked }) {
+  return `
+    <section class="summary" aria-label="Resumen">
+      <div class="summary__id">
+        ${safeUrl(image) ? `<img class="summary__img" src="${esc(safeUrl(image))}" alt="" loading="lazy" referrerpolicy="no-referrer">` : ''}
+        <div>
+          <div class="summary__sku">${esc(r.sku)}</div>
+          <h2 class="summary__title" tabindex="-1">${esc(title || 'Sin coincidencias exactas')}</h2>
+          <p class="summary__meta">${r.offerCount || 0} ofertas exactas en ${storesWith} ${storesWith === 1 ? 'tienda' : 'tiendas'} · ${checked} fuentes revisadas · ${Math.round((r.durationMs || 0) / 1000)} s${r.saved === false ? ' · no se guardó en el histórico' : ''}</p>
+        </div>
+      </div>
+      <div class="summary__best">
+        ${best ? `
+          <div class="summary__label">Menor ${best.totalKnown ? 'precio con envío' : 'precio · envío por confirmar'}</div>
+          <div class="summary__price">${money(best.total)}</div>
+          <div class="summary__where">en ${safeUrl(best.url) ? `<a href="${esc(safeUrl(best.url))}" target="_blank" rel="noopener">${esc(best.store)}</a>` : esc(best.store)} · ${esc(best.shipping.label)}</div>
+          ${delta != null && delta !== 0 ? `<span class="summary__delta" data-dir="${delta < 0 ? 'down' : 'up'}">${delta < 0 ? '▼' : '▲'} ${money(Math.abs(delta))} vs. búsqueda anterior</span>` : ''}
+          ${hist?.lowest && hist.lowest.total < best.total ? `<div class="summary__delta">Mínimo histórico ${money(hist.lowest.total)} · ${esc(hist.lowest.store || '')}</div>` : ''}
+        ` : `<div class="summary__label">Menor precio</div><div class="summary__price">—</div><div class="summary__where">No hay ofertas disponibles con el modelo exacto</div>`}
+      </div>
+    </section>`;
+}
+
+function similarHtml(r) {
+  if (!(r.similar || []).length) return '';
+  return `<details class="fold"><summary>Posibles coincidencias <span>(${r.similar.length}) · modelos parecidos, no cuentan para el ranking</span></summary>
+      <table class="rows"><thead><tr><th>Producto</th><th class="hide-sm">Tienda</th><th class="r">Precio</th></tr></thead><tbody>
+      ${r.similar.map((o) => `<tr><td>${safeUrl(o.url) ? `<a href="${esc(safeUrl(o.url))}" target="_blank" rel="noopener">${esc(o.title)}</a>` : esc(o.title)}<div class="hide-sm muted muted--sm">${o.available ? '' : 'Agotado'}</div></td><td class="hide-sm">${esc(o.store)}</td><td class="r num">${money(o.price)}</td></tr>`).join('')}
+      </tbody></table></details>`;
+}
+
+function storesHtml(r) {
+  return `<details class="fold"><summary>Detalle por fuente <span>· qué respondió cada tienda</span></summary>
+    <table class="rows"><thead><tr><th>Fuente</th><th>Estado</th><th class="hide-sm">Nota</th><th class="r">Tiempo</th></tr></thead><tbody>
+    ${(r.stores || []).map((s) => `<tr><td>${safeUrl(s.searchUrl) ? `<a href="${esc(safeUrl(s.searchUrl))}" target="_blank" rel="noopener">${esc(s.name)}</a>` : esc(s.name)}</td>
+      <td><span class="st" data-s="${esc(s.status)}">${s.status === 'ok' ? `${s.count} ${s.count === 1 ? 'oferta' : 'ofertas'}` : esc(STATUS_TEXT[s.status] || s.status)}</span></td>
+      <td class="hide-sm muted">${esc(s.message || (s.parser ? `lector ${s.parser}` : ''))}</td>
+      <td class="r num muted">${s.ms ? (s.ms / 1000).toFixed(1) + ' s' : '—'}</td></tr>`).join('')}
+    </tbody></table></details>`;
 }
 
 function switchHtml(key, label, checked) {
@@ -417,6 +428,7 @@ function renderHistory() {
         : `<div class="hist__none">Sin oferta disponible</div>`}
       </div>
       <div class="hist__actions">
+        <button class="btn btn--ghost btn--sm" data-act="download" title="Descargar este modelo como HTML">Descargar</button>
         <button class="btn btn--ghost btn--sm" data-act="research">Re-buscar</button>
         <button class="iconbtn" data-act="delete" aria-label="Borrar ${esc(h.sku)} del histórico">
           <svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -434,6 +446,7 @@ $('#historyList').addEventListener('click', async (e) => {
   const act = btn.dataset.act;
   if (act === 'open') location.hash = `#/sku/${encodeURIComponent(sku)}`;
   if (act === 'research') runSearch(sku);
+  if (act === 'download') downloadReport(btn, sku);
   if (act === 'delete') {
     const cell = btn.parentElement;
     const prev = cell.innerHTML;
@@ -478,6 +491,85 @@ async function openSaved(sku) {
     $('#searchState').innerHTML = `<div class="alert" role="alert"><strong>No encontré ese SKU en el histórico</strong>${esc(err.message)}</div>`;
   }
 }
+
+// ---------------------------------------------------------------- Descarga de reporte
+// Archivo HTML autocontenido (estilos y fuentes incrustados) con las mismas cards del inicio.
+async function inlineCss() {
+  let css = await (await fetch('/styles.css')).text();
+  const urls = [...new Set([...css.matchAll(/url\("([^"]+)"\)/g)].map((m) => m[1]))];
+  const toData = (blob) => new Promise((ok, fail) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.onerror = fail; fr.readAsDataURL(blob); });
+  for (const u of urls) {
+    try {
+      const res = await fetch(u);
+      if (res.ok) css = css.split(`url("${u}")`).join(`url("${await toData(await res.blob())}")`);
+    } catch { /* sin esa fuente: queda la tipografía del sistema */ }
+  }
+  return css;
+}
+
+async function downloadReport(btn, sku) {
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Preparando…';
+  try {
+    const ex = $('#histExclude3p').checked;
+    const [{ latest: r }, css] = await Promise.all([api(`/api/history/${encodeURIComponent(sku)}`), inlineCss()]);
+    const hist = state.history.find((h) => h.sku === sku);
+    const offers = (r.offers || []).filter((o) => !ex || !['third_party', 'unverified'].includes(o.sellerType));
+    const byTotal = (a, b) => (a.totalKnown === b.totalKnown ? a.total - b.total : a.totalKnown ? -1 : 1);
+    const avail = offers.filter((o) => o.available).sort(byTotal);
+    const out = offers.filter((o) => !o.available).sort(byTotal);
+    const best = bestOf(avail);
+    const storesWith = new Set((r.offers || []).map((o) => o.store)).size;
+    const checked = (r.stores || []).filter((s) => s.status !== 'skipped').length;
+    const title = best?.title || r.offers?.[0]?.title || r.similar?.[0]?.title || '';
+    const image = best?.image || r.offers?.find((o) => o.image)?.image;
+    const when = new Date(r.at);
+
+    const grid = document.createElement('div');
+    grid.className = 'offers offers--still';
+    avail.forEach((o, i) => grid.appendChild(offerCard(o, o.id === best?.id, i)));
+    if (out.length) {
+      const sep = document.createElement('div');
+      sep.className = 'offers-sep';
+      sep.textContent = `Agotados o sin envío a domicilio (${out.length}) · no cuentan para el menor precio`;
+      grid.appendChild(sep);
+      out.forEach((o, i) => grid.appendChild(offerCard(o, false, avail.length + i)));
+    }
+    const pts = (hist?.series || []).filter((p) => p.total != null);
+    const series = pts.length > 1 ? `<details class="fold"><summary>Evolución del mejor precio <span>· ${pts.length} búsquedas</span></summary>
+      <table class="rows"><thead><tr><th>Fecha</th><th>Tienda</th><th class="r">Mejor precio</th></tr></thead><tbody>
+      ${[...pts].reverse().map((p) => `<tr><td>${esc(fmtDate(new Date(p.at)))}</td><td>${esc(p.store || '')}</td><td class="r num">${money(p.total)}</td></tr>`).join('')}
+      </tbody></table></details>` : '';
+
+    const body = `
+      <p class="saved-note">Reporte de <strong>${esc(r.sku)}</strong> generado de la búsqueda del <strong>${esc(fmtDate(when))}</strong>${ex ? ' · sin vendedores terceros' : ''}. Los precios pueden haber cambiado.</p>
+      ${summaryHtml(r, { best, hist, delta: null, image, title, storesWith, checked })}
+      ${offers.length ? grid.outerHTML : `<div class="empty"><h2 class="empty__title">No hay ofertas exactas de ${esc(r.sku)} en este reporte</h2></div>`}
+      ${similarHtml(r)}${storesHtml(r)}${series}`;
+    const doc = `<!doctype html>
+<html lang="es-MX"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(r.sku)} · SKU/FINDER</title>
+<style>${css}</style></head>
+<body><main class="wrap" style="padding-top:var(--s-5)">${body}</main></body></html>`;
+
+    const stamp = when.toISOString().slice(0, 10);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([doc], { type: 'text/html;charset=utf-8' }));
+    a.download = `${r.sku.replace(/[^A-Za-z0-9._-]/g, '-')}-${stamp}.html`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+    notify(`Reporte de ${r.sku} descargado.`);
+  } catch (err) {
+    notify(`No se pudo descargar el reporte: ${err.message}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = label;
+  }
+}
+
 async function loadHistoryQuiet() {
   try { const { items } = await api('/api/history'); state.history = items; $('#historyCount').textContent = items.length || ''; } catch { /* no-op */ }
 }
